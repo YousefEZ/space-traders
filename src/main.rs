@@ -52,5 +52,7 @@ async fn register(callsign: String, faction: FactionType) -> Result<Registration
 
 
 fn main() {
-    println!("Hello, world!");
+    // register(String::from("Testing"), FactionType::Cosmic);
+
+
 }
