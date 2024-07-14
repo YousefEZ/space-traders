@@ -1,58 +1,43 @@
-use serde::Deserialize;
-use reqwest::Client;
-use reqwest::Error;
-use reqwest::Response;
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 
-use crate::contract::*;
-use crate::ship::*;
-use crate::agent::*;
+pub mod action;
+pub mod app;
+pub mod cli;
+pub mod components;
+pub mod config;
+pub mod mode;
+pub mod tui;
+pub mod utils;
 
-mod contract; 
-mod ship;
-mod agent;
+use clap::Parser;
+use cli::Cli;
+use color_eyre::eyre::Result;
 
+use crate::{
+  app::App,
+  utils::{initialize_logging, initialize_panic_handler, version},
+};
 
-enum FactionType
-{
-    Cosmic,
-    Galactic
+async fn tokio_main() -> Result<()> {
+  initialize_logging()?;
+
+  initialize_panic_handler()?;
+
+  let args = Cli::parse();
+  let mut app = App::new(args.tick_rate, args.frame_rate)?;
+  app.run().await?;
+
+  Ok(())
 }
 
-
-#[derive(Deserialize)]
-struct RegistrationResponse {
-    token: String,
-    agent: Agent,
-    contract: Contract,
-    faction: Faction,
-    ship: Ship,
-}
-
-
-
-async fn register(callsign: String, faction: FactionType) -> Result<RegistrationResponse, reqwest::Error>
-{        
-    let client = reqwest::Client::new();
-    
-    let params = [("callsign", callsign), 
-                  ("faction", match faction { 
-                      FactionType::Cosmic => String::from("Cosmic"), 
-                      FactionType::Galactic => String::from("Galactic")
-                  })];
-
-    client
-        .post("https://api.spacetraders.io/v2/register")
-        .form(&params)
-        .send()
-        .await?
-        .json::<RegistrationResponse>()
-        .await
-}
-
-
-
-fn main() {
-    // register(String::from("Testing"), FactionType::Cosmic);
-
-
+#[tokio::main]
+async fn main() -> Result<()> {
+  if let Err(e) = tokio_main().await {
+    eprintln!("{} error: Something went wrong", env!("CARGO_PKG_NAME"));
+    Err(e)
+  } else {
+    Ok(())
+  }
 }
